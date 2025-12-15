@@ -5,13 +5,13 @@ import { Button } from '../components/ui/Button';
 import { MovieCard } from '../components/MovieCard';
 import { movieAPI, Movie } from '../services/movieAPI';
 const FEATURED_MOVIE = {
-  id: 'oppenheimer',
-  title: 'OPPENHEIMER',
-  description: 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.',
-  image: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=2070&auto=format&fit=crop',
+  id: 'Avatar',
+  title: 'Avatar: Fire and Ash',
+  description: 'In the wake of the devastating war against the RDA and the loss of their eldest son, Jake Sully and Neytiri face a new threat on Pandora',
+  image: '/avatar-fires-and-ash.jpg',
   rating: '9.2',
   duration: '3h 00m',
-  genre: 'Biography, Drama'
+  genre: 'Science Fiction, Adventure, Fantasy'
 };
 export function HomePage() {
   const [movies, setMovies] = useState<Movie[]>([]);

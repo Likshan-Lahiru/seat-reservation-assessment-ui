@@ -13,17 +13,8 @@ export function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   const navLinks = [{
-    name: 'Home',
+    name: '',
     path: '/'
-  }, {
-    name: 'Movies',
-    path: '/movies'
-  }, {
-    name: 'Theaters',
-    path: '/theaters'
-  }, {
-    name: 'Experiences',
-    path: '/experiences'
   }];
   return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-luxury-black/90 backdrop-blur-md border-b border-luxury-gold/20 py-4' : 'bg-transparent py-6'}`}>
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
@@ -50,18 +41,8 @@ export function Navigation() {
 
         {/* Actions */}
         <div className="flex items-center gap-6">
-          <button className="text-gray-400 hover:text-luxury-gold transition-colors">
-            <User className="w-5 h-5" />
-          </button>
-          <button className="relative text-gray-400 hover:text-luxury-gold transition-colors">
-            <ShoppingBag className="w-5 h-5" />
-            <span className="absolute -top-2 -right-2 w-4 h-4 bg-luxury-gold text-luxury-black text-[10px] font-bold flex items-center justify-center rounded-full">
-              0
-            </span>
-          </button>
-          <button className="md:hidden text-white">
-            <Menu className="w-6 h-6" />
-          </button>
+
+
         </div>
       </div>
     </header>;
