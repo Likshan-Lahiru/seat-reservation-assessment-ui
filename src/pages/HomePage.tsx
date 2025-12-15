@@ -21,7 +21,7 @@ export function HomePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // ✅ Trailer modal state (added)
+
     const [isTrailerOpen, setIsTrailerOpen] = useState(false);
     const TRAILER_URL = 'https://www.youtube.com/watch?v=Ma1x7ikpid8';
 
