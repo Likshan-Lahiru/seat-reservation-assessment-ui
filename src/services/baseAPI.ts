@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:4000/api';
+//const BASE_URL = 'http://localhost:4000/api';
+const BASE_URL = 'https://seat-reservation-assessment.onrender.com/api';
 export class APIError extends Error {
   constructor(message: string, public status?: number, public data?: any) {
     super(message);
