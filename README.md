@@ -12,7 +12,7 @@ Frontend (Vercel): `https://seat-reservation-assessment-ui.vercel.app/`
 * React + Vite
 * TypeScript
 * Tailwind CSS
-* (Optional) Axios / Fetch for API calls
+* Axios / Fetch for API calls
 
 ---
 
