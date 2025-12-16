@@ -162,7 +162,7 @@ export function SeatGrid({
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-red-900/20 border border-red-900/30" />
-                    <span>Occupied</span>
+                    <span>Reserved</span>
                 </div>
             </div>
         </div>
