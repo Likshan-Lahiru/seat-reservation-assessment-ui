@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Star, Clock, Calendar, ChevronLeft, Loader2 } from 'lucide-react'
+import {
+    Star,
+    Clock,
+    Calendar,
+    ChevronLeft,
+    Loader2,
+    ChevronDown,
+} from 'lucide-react'
 import { Button } from '../components/ui/Button'
 
 import { movieAPI, Movie, Show } from '../services/movieAPI'
@@ -16,7 +23,6 @@ function formatDate(dateStr: string): string {
     const today = new Date()
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    // Reset time for comparison
     today.setHours(0, 0, 0, 0)
     tomorrow.setHours(0, 0, 0, 0)
     date.setHours(0, 0, 0, 0)
@@ -86,13 +92,11 @@ export function MovieDetailsPage() {
         }
         fetchMovie()
     }, [id])
-    // Show only next 7 days in the horizontal scroll
     const displayedDates = showsByDate.slice(0, 7)
     const selectedDateShows = showsByDate[selectedDateIndex]?.shows || []
     const selectedShow = selectedShowId
         ? selectedDateShows.find((s) => s.id === selectedShowId)
         : null
-    // Get all available dates for calendar modal
     const availableDates = showsByDate.map((d) => d.date)
     const selectedDate = showsByDate[selectedDateIndex]?.date || null
     const handleCalendarDateSelect = (date: string) => {
@@ -123,7 +127,6 @@ export function MovieDetailsPage() {
     }
     return (
         <>
-            {/* Calendar Modal */}
             <CalendarModal
                 isOpen={isCalendarOpen}
                 onClose={() => setIsCalendarOpen(false)}
@@ -132,7 +135,6 @@ export function MovieDetailsPage() {
                 onSelectDate={handleCalendarDateSelect}
             />
 
-            {/* Back Button */}
             <div className="fixed top-24 left-6 z-40">
                 <Link to={`/movie/${id}/select-theater`}>
                     <Button
@@ -146,8 +148,7 @@ export function MovieDetailsPage() {
                 </Link>
             </div>
 
-            {/* Hero Content */}
-            <div className="min-h-screen bg-luxury-black pt-20">
+            <div className="min-h-screen bg-luxury-black pt-20 relative">
                 <div className="relative min-h-[60vh] w-full">
                     <div className="absolute inset-0">
                         <img
@@ -161,7 +162,6 @@ export function MovieDetailsPage() {
 
                     <div className="relative z-10 max-w-7xl mx-auto px-6 pt-20 md:pt-32 pb-12">
                         <div className="grid md:grid-cols-[300px_1fr] gap-12 items-end">
-                            {/* Poster */}
                             <motion.div
                                 initial={{
                                     opacity: 0,
@@ -183,7 +183,6 @@ export function MovieDetailsPage() {
                                 />
                             </motion.div>
 
-                            {/* Info */}
                             <motion.div
                                 initial={{
                                     opacity: 0,
@@ -233,12 +232,56 @@ export function MovieDetailsPage() {
                         </div>
                     </div>
                 </div>
+
+                <motion.div
+                    initial={{
+                        opacity: 0,
+                    }}
+                    animate={{
+                        opacity: 1,
+                    }}
+                    transition={{
+                        delay: 1,
+                        duration: 0.8,
+                    }}
+                    className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3"
+                >
+          <span className="text-luxury-gold text-sm font-medium tracking-widest uppercase">
+            Book Your Ticket
+          </span>
+                    <div className="flex flex-col items-center">
+                        <motion.div
+                            animate={{
+                                y: [0, 8, 0],
+                            }}
+                            transition={{
+                                duration: 1.5,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                            }}
+                        >
+                            <ChevronDown className="w-6 h-6 text-luxury-gold" />
+                        </motion.div>
+                        <motion.div
+                            animate={{
+                                y: [0, 8, 0],
+                            }}
+                            transition={{
+                                duration: 1.5,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                                delay: 0.2,
+                            }}
+                            className="-mt-3"
+                        >
+                            <ChevronDown className="w-6 h-6 text-luxury-gold opacity-60" />
+                        </motion.div>
+                    </div>
+                </motion.div>
             </div>
 
-            {/* Booking Section */}
             <div className="max-w-7xl mx-auto px-6 py-12">
                 <div className="grid lg:grid-cols-[1fr_400px] gap-12">
-                    {/* Showtimes */}
                     <div className="space-y-12">
                         <div>
                             <h3 className="text-2xl font-serif font-bold text-white mb-6 flex items-center gap-3">
@@ -272,7 +315,6 @@ export function MovieDetailsPage() {
                                     )
                                 })}
 
-                                {/* Calendar Button - Opens Modal */}
                                 {showsByDate.length > 7 && (
                                     <button
                                         onClick={() => setIsCalendarOpen(true)}
@@ -318,7 +360,6 @@ export function MovieDetailsPage() {
                         </div>
                     </div>
 
-                    {/* Summary Card */}
                     <div className="lg:sticky lg:top-32 h-fit">
                         <div className="bg-luxury-soft border border-white/10 rounded-sm p-6 space-y-6">
                             <h3 className="text-xl font-serif font-bold text-white">
