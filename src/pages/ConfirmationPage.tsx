@@ -38,7 +38,6 @@ export function ConfirmationPage() {
         )
     }
 
-    // ✅ QR payload (minimal, privacy-friendly)
     const qrValue = useMemo(() => {
         return JSON.stringify({
             reservationId: reservation.id ?? "",
@@ -48,20 +47,17 @@ export function ConfirmationPage() {
         })
     }, [reservation])
 
-    // ✅ share text (WhatsApp + Email + Copy)
+
     const shareText = useMemo(() => {
         const bookingId = String(reservation.id ?? "").slice(0, 8) || "N/A"
         const seats = reservation.seatIds?.length ?? 0
         const showId = reservation.showId ?? "N/A"
 
-        // Optional: if you have a ticket route, add it here
-        // const ticketUrl = `${window.location.origin}/ticket/${reservation.id}`
-        // return `Reservation Confirmed ✅\nBooking ID: ${bookingId}\nSeats: ${seats}\nShow: ${showId}\nTicket: ${ticketUrl}`
+
 
         return `Reservation Confirmed ✅\nBooking ID: ${bookingId}\nSeats: ${seats}\nShow ID: ${showId}`
     }, [reservation])
 
-    // ✅ SAVE: download QR as PNG (no UI change)
     const handleSave = async () => {
         const svg = document.getElementById("reservation-qr")
         if (!svg) return
@@ -97,13 +93,13 @@ export function ConfirmationPage() {
         img.src = url
     }
 
-    // ✅ WhatsApp open with pre-filled message
+
     const handleShareWhatsApp = () => {
         const url = `https://wa.me/?text=${encodeURIComponent(shareText)}`
         window.open(url, "_blank", "noopener,noreferrer")
     }
 
-    // ✅ Email open (mailto)
+
     const handleShareEmail = () => {
         const subject = `Reservation Confirmed - ${String(reservation.id ?? "").slice(0, 8)}`
         const body = `${shareText}\n\n(You can also scan the QR code at entrance.)`
@@ -111,7 +107,7 @@ export function ConfirmationPage() {
         window.location.href = url
     }
 
-    // ✅ Copy to clipboard
+
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(shareText)
@@ -121,7 +117,7 @@ export function ConfirmationPage() {
         }
     }
 
-    // ✅ System share sheet (mobile) optional
+
     const handleSystemShare = async () => {
         try {
             if (!navigator.share) {
@@ -229,7 +225,7 @@ export function ConfirmationPage() {
                                     </div>
                                 </div>
 
-                                {/* ✅ REAL QR CODE (UI unchanged) */}
+
                                 <div className="w-32 h-32 mx-auto bg-white p-2 rounded-sm">
                                     <div className="w-full h-full flex items-center justify-center">
                                         <QRCode
@@ -281,7 +277,7 @@ export function ConfirmationPage() {
                 </motion.div>
             </div>
 
-            {/* ✅ SHARE UI (Modal) */}
+
             <AnimatePresence>
                 {isShareOpen && (
                     <motion.div
