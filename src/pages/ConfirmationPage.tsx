@@ -1,7 +1,7 @@
 // src/pages/ConfirmationPage.tsx
-import React, { useMemo } from "react"
+import React, { useMemo, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import {
     Check,
     Download,
@@ -9,6 +9,11 @@ import {
     Calendar,
     Clock,
     User,
+    Mail,
+    MessageCircle,
+    Copy,
+    X,
+    Share,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "../components/ui/Button"
@@ -16,6 +21,8 @@ import { Button } from "../components/ui/Button"
 export function ConfirmationPage() {
     const location = useLocation()
     const reservation = location.state?.reservation
+
+    const [isShareOpen, setIsShareOpen] = useState(false)
 
     // If no reservation data, show a fallback message
     if (!reservation) {
@@ -31,7 +38,7 @@ export function ConfirmationPage() {
         )
     }
 
-    // ✅ QR payload (keep it minimal for privacy)
+    // ✅ QR payload (minimal, privacy-friendly)
     const qrValue = useMemo(() => {
         return JSON.stringify({
             reservationId: reservation.id ?? "",
@@ -39,6 +46,19 @@ export function ConfirmationPage() {
             seatIds: reservation.seatIds ?? [],
             createdAt: reservation.createdAt ?? "",
         })
+    }, [reservation])
+
+    // ✅ share text (WhatsApp + Email + Copy)
+    const shareText = useMemo(() => {
+        const bookingId = String(reservation.id ?? "").slice(0, 8) || "N/A"
+        const seats = reservation.seatIds?.length ?? 0
+        const showId = reservation.showId ?? "N/A"
+
+        // Optional: if you have a ticket route, add it here
+        // const ticketUrl = `${window.location.origin}/ticket/${reservation.id}`
+        // return `Reservation Confirmed ✅\nBooking ID: ${bookingId}\nSeats: ${seats}\nShow: ${showId}\nTicket: ${ticketUrl}`
+
+        return `Reservation Confirmed ✅\nBooking ID: ${bookingId}\nSeats: ${seats}\nShow ID: ${showId}`
     }, [reservation])
 
     // ✅ SAVE: download QR as PNG (no UI change)
@@ -60,11 +80,8 @@ export function ConfirmationPage() {
             const ctx = canvas.getContext("2d")
             if (!ctx) return
 
-            // white background
             ctx.fillStyle = "#ffffff"
             ctx.fillRect(0, 0, size, size)
-
-            // draw QR
             ctx.drawImage(img, 0, 0, size, size)
 
             canvas.toBlob((blob) => {
@@ -80,24 +97,43 @@ export function ConfirmationPage() {
         img.src = url
     }
 
-    // ✅ SHARE: Web Share API (mobile) fallback copy payload
-    const handleShare = async () => {
+    // ✅ WhatsApp open with pre-filled message
+    const handleShareWhatsApp = () => {
+        const url = `https://wa.me/?text=${encodeURIComponent(shareText)}`
+        window.open(url, "_blank", "noopener,noreferrer")
+    }
+
+    // ✅ Email open (mailto)
+    const handleShareEmail = () => {
+        const subject = `Reservation Confirmed - ${String(reservation.id ?? "").slice(0, 8)}`
+        const body = `${shareText}\n\n(You can also scan the QR code at entrance.)`
+        const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+        window.location.href = url
+    }
+
+    // ✅ Copy to clipboard
+    const handleCopy = async () => {
         try {
-            if (navigator.share) {
-                await navigator.share({
-                    title: "Reservation Ticket",
-                    text: `Reservation confirmed. Booking ID: ${String(reservation.id ?? "").slice(
-                        0,
-                        8,
-                    )}`,
-                })
+            await navigator.clipboard.writeText(shareText)
+            alert("Copied to clipboard.")
+        } catch {
+            alert("Copy failed.")
+        }
+    }
+
+    // ✅ System share sheet (mobile) optional
+    const handleSystemShare = async () => {
+        try {
+            if (!navigator.share) {
+                alert("System share not supported on this device/browser.")
                 return
             }
-
-            await navigator.clipboard.writeText(qrValue)
-            alert("QR data copied to clipboard.")
+            await navigator.share({
+                title: "Reservation Ticket",
+                text: shareText,
+            })
         } catch {
-            alert("Share failed.")
+            // user cancelled or blocked
         }
     }
 
@@ -193,7 +229,7 @@ export function ConfirmationPage() {
                                     </div>
                                 </div>
 
-
+                                {/* ✅ REAL QR CODE (UI unchanged) */}
                                 <div className="w-32 h-32 mx-auto bg-white p-2 rounded-sm">
                                     <div className="w-full h-full flex items-center justify-center">
                                         <QRCode
@@ -226,7 +262,7 @@ export function ConfirmationPage() {
                             <Button
                                 variant="outline"
                                 className="flex-1 gap-2"
-                                onClick={handleShare}
+                                onClick={() => setIsShareOpen(true)}
                             >
                                 <Share2 className="w-4 h-4" />
                                 Share
@@ -244,6 +280,82 @@ export function ConfirmationPage() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* ✅ SHARE UI (Modal) */}
+            <AnimatePresence>
+                {isShareOpen && (
+                    <motion.div
+                        className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsShareOpen(false)}
+                    >
+                        <motion.div
+                            className="w-full max-w-md bg-luxury-soft border border-white/10 rounded-sm p-5"
+                            initial={{ y: 24, opacity: 0, scale: 0.98 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            exit={{ y: 24, opacity: 0, scale: 0.98 }}
+                            transition={{ duration: 0.2 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-white font-bold">Share Ticket</h3>
+                                <button
+                                    onClick={() => setIsShareOpen(false)}
+                                    className="text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start gap-3"
+                                    onClick={handleShareWhatsApp}
+                                >
+                                    <MessageCircle className="w-4 h-4" />
+                                    Share via WhatsApp
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start gap-3"
+                                    onClick={handleShareEmail}
+                                >
+                                    <Mail className="w-4 h-4" />
+                                    Share via Email
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start gap-3"
+                                    onClick={handleCopy}
+                                >
+                                    <Copy className="w-4 h-4" />
+                                    Copy message
+                                </Button>
+
+                                {typeof navigator !== "undefined" && "share" in navigator && (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full justify-start gap-3"
+                                        onClick={handleSystemShare}
+                                    >
+                                        <Share className="w-4 h-4" />
+                                        System Share (Mobile)
+                                    </Button>
+                                )}
+                            </div>
+
+                            <p className="mt-4 text-xs text-gray-500">
+                                Note: WhatsApp will open with a pre-filled message. You can pick the contact inside WhatsApp.
+                            </p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
