@@ -1,69 +1,118 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, User, Mail, CreditCard, Loader2 } from 'lucide-react'
-import { Button } from '../components/ui/Button'
-import { movieAPI } from '../services/movieAPI'
+import React, { useEffect, useState } from "react"
+import { z } from "zod"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { ChevronLeft, User, Mail, CreditCard } from "lucide-react"
+import { Button } from "../components/ui/Button"
+import { movieAPI } from "../services/movieAPI"
+
+// ✅ Frontend validation matching backend schema
+const checkoutFormSchema = z.object({
+    name: z.string().trim().min(1, "Full name is required"),
+    email: z.string().trim().email("Enter a valid email address"),
+    nic: z.string().trim().min(5, "NIC must be at least 5 characters"),
+})
+
+type CheckoutForm = z.infer<typeof checkoutFormSchema>
+
 export function CheckoutPage() {
     const navigate = useNavigate()
     const [searchParams] = useSearchParams()
-    const showId = searchParams.get('showId')
-    const seatIds = searchParams.get('seatIds')?.split(',') || []
+
+    const showId = searchParams.get("showId")
+    const seatIds = searchParams.get("seatIds")?.split(",") || []
+
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        nic: '',
+
+    const [formData, setFormData] = useState<CheckoutForm>({
+        name: "",
+        email: "",
+        nic: "",
     })
+
+    const [fieldErrors, setFieldErrors] = useState<
+        Partial<Record<keyof CheckoutForm, string>>
+    >({})
+
     useEffect(() => {
         if (!showId || seatIds.length === 0) {
-            navigate('/seats')
+            navigate("/seats")
         }
-    }, [showId, seatIds, navigate])
+    }, [showId, seatIds.length, navigate])
+
+    const validateAll = (data: CheckoutForm) => {
+        const result = checkoutFormSchema.safeParse(data)
+        if (result.success) {
+            setFieldErrors({})
+            return { ok: true as const, data: result.data }
+        }
+
+        const nextErrors: Partial<Record<keyof CheckoutForm, string>> = {}
+        for (const issue of result.error.issues) {
+            const key = issue.path[0] as keyof CheckoutForm
+            if (!nextErrors[key]) nextErrors[key] = issue.message
+        }
+        setFieldErrors(nextErrors)
+        return { ok: false as const }
+    }
+
+    const validateField = (name: keyof CheckoutForm, value: string) => {
+        const shape = checkoutFormSchema.shape[name]
+        const result = shape.safeParse(value)
+        setFieldErrors((prev) => ({
+            ...prev,
+            [name]: result.success ? "" : result.error.issues[0]?.message || "Invalid",
+        }))
+    }
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target
+        setFormData((prev) => ({ ...prev, [name]: value } as CheckoutForm))
+        validateField(name as keyof CheckoutForm, value)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsProcessing(true)
         setError(null)
+
+        const checked = validateAll(formData)
+        if (!checked.ok) {
+            setIsProcessing(false)
+            return
+        }
+
         try {
             const reservationData = {
-                showId: showId!,
+                showId: showId!, // you already redirect if missing
                 seatIds,
                 user: {
-                    name: formData.name,
-                    email: formData.email,
-                    nic: formData.nic,
+                    name: checked.data.name,
+                    email: checked.data.email,
+                    nic: checked.data.nic,
                 },
             }
-            console.log('Sending reservation request:', reservationData)
+
             const reservation = await movieAPI.createReservation(reservationData)
-            console.log('Received reservation response:', reservation)
-            // Navigate to confirmation with reservation data
-            navigate('/confirmation', {
+
+            navigate("/confirmation", {
                 state: {
                     reservation: {
-                        id: reservation.id || 'N/A',
+                        id: reservation.id || "N/A",
                         showId: reservation.showId || showId,
                         seatIds: reservation.seatIds || seatIds,
-                        user: reservation.user || formData,
+                        user: reservation.user || checked.data,
                         createdAt: reservation.createdAt || new Date().toISOString(),
                     },
                 },
             })
         } catch (err) {
-            console.error('Reservation error:', err)
-            setError(
-                err instanceof Error ? err.message : 'Failed to create reservation',
-            )
+            setError(err instanceof Error ? err.message : "Failed to create reservation")
         } finally {
             setIsProcessing(false)
         }
     }
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        })
-    }
+
     return (
         <div className="min-h-screen bg-luxury-black pt-20 pb-20">
             <div className="max-w-6xl mx-auto px-6">
@@ -75,6 +124,7 @@ export function CheckoutPage() {
                         <ChevronLeft className="w-4 h-4" />
                         Back to Seats
                     </Link>
+
                     <h1 className="text-3xl md:text-4xl font-serif font-bold text-white">
                         Checkout
                     </h1>
@@ -95,6 +145,7 @@ export function CheckoutPage() {
                             )}
 
                             <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Name */}
                                 <div className="space-y-2">
                                     <label className="text-xs uppercase tracking-wider text-gray-400">
                                         Full Name
@@ -111,8 +162,12 @@ export function CheckoutPage() {
                                         />
                                         <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                     </div>
+                                    {!!fieldErrors.name && (
+                                        <p className="text-xs text-red-400">{fieldErrors.name}</p>
+                                    )}
                                 </div>
 
+                                {/* Email */}
                                 <div className="space-y-2">
                                     <label className="text-xs uppercase tracking-wider text-gray-400">
                                         Email Address
@@ -129,8 +184,12 @@ export function CheckoutPage() {
                                         />
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                     </div>
+                                    {!!fieldErrors.email && (
+                                        <p className="text-xs text-red-400">{fieldErrors.email}</p>
+                                    )}
                                 </div>
 
+                                {/* NIC */}
                                 <div className="space-y-2">
                                     <label className="text-xs uppercase tracking-wider text-gray-400">
                                         NIC Number
@@ -147,22 +206,21 @@ export function CheckoutPage() {
                                         />
                                         <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                     </div>
+                                    {!!fieldErrors.nic && (
+                                        <p className="text-xs text-red-400">{fieldErrors.nic}</p>
+                                    )}
                                 </div>
 
                                 <div className="pt-4">
-                                    <Button
-                                        type="submit"
-                                        className="w-full"
-                                        size="lg"
-                                        isLoading={isProcessing}
-                                    >
-                                        {isProcessing ? 'Processing...' : 'Complete Reservation'}
+                                    <Button type="submit" className="w-full" size="lg" isLoading={isProcessing}>
+                                        {isProcessing ? "Processing..." : "Complete Reservation"}
                                     </Button>
                                 </div>
                             </form>
                         </div>
                     </div>
 
+                    {/* right side unchanged */}
                     <div className="space-y-6">
                         <div className="bg-white/5 border border-white/10 rounded-sm p-6">
                             <h3 className="text-lg font-serif font-bold text-white mb-6">
@@ -201,6 +259,7 @@ export function CheckoutPage() {
                             </div>
                         </div>
                     </div>
+                    {/* end right */}
                 </div>
             </div>
         </div>
