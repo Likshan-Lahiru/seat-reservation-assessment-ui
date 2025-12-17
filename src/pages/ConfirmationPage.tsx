@@ -1,11 +1,22 @@
-import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Check, Download, Share2, Calendar, Clock, User } from 'lucide-react'
-import { Button } from '../components/ui/Button'
+// src/pages/ConfirmationPage.tsx
+import React, { useMemo } from "react"
+import { Link, useLocation } from "react-router-dom"
+import { motion } from "framer-motion"
+import {
+    Check,
+    Download,
+    Share2,
+    Calendar,
+    Clock,
+    User,
+} from "lucide-react"
+import QRCode from "react-qr-code"
+import { Button } from "../components/ui/Button"
+
 export function ConfirmationPage() {
     const location = useLocation()
     const reservation = location.state?.reservation
+
     // If no reservation data, show a fallback message
     if (!reservation) {
         return (
@@ -19,21 +30,84 @@ export function ConfirmationPage() {
             </div>
         )
     }
+
+    // ✅ QR payload (keep it minimal for privacy)
+    const qrValue = useMemo(() => {
+        return JSON.stringify({
+            reservationId: reservation.id ?? "",
+            showId: reservation.showId ?? "",
+            seatIds: reservation.seatIds ?? [],
+            createdAt: reservation.createdAt ?? "",
+        })
+    }, [reservation])
+
+    // ✅ SAVE: download QR as PNG (no UI change)
+    const handleSave = async () => {
+        const svg = document.getElementById("reservation-qr")
+        if (!svg) return
+
+        const xml = new XMLSerializer().serializeToString(svg)
+        const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" })
+        const url = URL.createObjectURL(svgBlob)
+
+        const img = new Image()
+        img.onload = () => {
+            const canvas = document.createElement("canvas")
+            const size = 512
+            canvas.width = size
+            canvas.height = size
+
+            const ctx = canvas.getContext("2d")
+            if (!ctx) return
+
+            // white background
+            ctx.fillStyle = "#ffffff"
+            ctx.fillRect(0, 0, size, size)
+
+            // draw QR
+            ctx.drawImage(img, 0, 0, size, size)
+
+            canvas.toBlob((blob) => {
+                if (!blob) return
+                const a = document.createElement("a")
+                a.href = URL.createObjectURL(blob)
+                a.download = `reservation-${String(reservation.id ?? "ticket").slice(0, 8)}.png`
+                a.click()
+            }, "image/png")
+
+            URL.revokeObjectURL(url)
+        }
+        img.src = url
+    }
+
+    // ✅ SHARE: Web Share API (mobile) fallback copy payload
+    const handleShare = async () => {
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: "Reservation Ticket",
+                    text: `Reservation confirmed. Booking ID: ${String(reservation.id ?? "").slice(
+                        0,
+                        8,
+                    )}`,
+                })
+                return
+            }
+
+            await navigator.clipboard.writeText(qrValue)
+            alert("QR data copied to clipboard.")
+        } catch {
+            alert("Share failed.")
+        }
+    }
+
     return (
         <div className="min-h-screen bg-luxury-black flex items-center justify-center p-6">
             <div className="max-w-md w-full">
                 <motion.div
-                    initial={{
-                        scale: 0.9,
-                        opacity: 0,
-                    }}
-                    animate={{
-                        scale: 1,
-                        opacity: 1,
-                    }}
-                    transition={{
-                        duration: 0.5,
-                    }}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
                     className="bg-luxury-soft rounded-sm overflow-hidden relative"
                 >
                     <div className="h-1 w-full bg-gradient-to-r from-luxury-gold-dark via-luxury-gold to-luxury-gold-dark" />
@@ -61,6 +135,7 @@ export function ConfirmationPage() {
                                 <h2 className="text-xl font-bold text-white uppercase tracking-wider">
                                     YOUR BOOKING
                                 </h2>
+
                                 <div className="flex justify-center gap-4 text-xs text-gray-400">
                                     <div className="flex items-center gap-1">
                                         <Calendar className="w-3 h-3" />
@@ -79,19 +154,21 @@ export function ConfirmationPage() {
                                         <User className="w-4 h-4 text-luxury-gold" />
                                         <span className="text-gray-400">Name:</span>
                                         <span className="text-white font-medium">
-                      {reservation.user?.name || 'N/A'}
+                      {reservation.user?.name || "N/A"}
                     </span>
                                     </div>
+
                                     <div className="text-sm">
                                         <span className="text-gray-400">Email:</span>
                                         <span className="text-white ml-2">
-                      {reservation.user?.email || 'N/A'}
+                      {reservation.user?.email || "N/A"}
                     </span>
                                     </div>
+
                                     <div className="text-sm">
                                         <span className="text-gray-400">NIC:</span>
                                         <span className="text-white ml-2">
-                      {reservation.user?.nic || 'N/A'}
+                      {reservation.user?.nic || "N/A"}
                     </span>
                                     </div>
                                 </div>
@@ -102,9 +179,10 @@ export function ConfirmationPage() {
                       Booking ID
                     </span>
                                         <p className="text-white font-bold text-xs">
-                                            {reservation.id?.slice(0, 8) || 'N/A'}
+                                            {reservation.id?.slice(0, 8) || "N/A"}
                                         </p>
                                     </div>
+
                                     <div>
                     <span className="text-[10px] uppercase text-gray-500 tracking-wider">
                       Seats
@@ -115,11 +193,20 @@ export function ConfirmationPage() {
                                     </div>
                                 </div>
 
+
                                 <div className="w-32 h-32 mx-auto bg-white p-2 rounded-sm">
-                                    <div className="w-full h-full bg-black flex items-center justify-center text-white text-[8px]">
-                                        QR CODE
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <QRCode
+                                            id="reservation-qr"
+                                            value={qrValue}
+                                            size={112}
+                                            bgColor="#ffffff"
+                                            fgColor="#000000"
+                                            level="M"
+                                        />
                                     </div>
                                 </div>
+
                                 <p className="text-[10px] text-gray-500 uppercase tracking-widest">
                                     Scan at entrance
                                 </p>
@@ -127,11 +214,20 @@ export function ConfirmationPage() {
                         </div>
 
                         <div className="flex gap-4">
-                            <Button variant="outline" className="flex-1 gap-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1 gap-2"
+                                onClick={handleSave}
+                            >
                                 <Download className="w-4 h-4" />
                                 Save
                             </Button>
-                            <Button variant="outline" className="flex-1 gap-2">
+
+                            <Button
+                                variant="outline"
+                                className="flex-1 gap-2"
+                                onClick={handleShare}
+                            >
                                 <Share2 className="w-4 h-4" />
                                 Share
                             </Button>
